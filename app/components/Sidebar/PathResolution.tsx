@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { Icon, Input, Table, Tooltip } from "antd";
+import { Input, Table, Tooltip } from "antd";
+import { CloseOutlined, PlusOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { importResolvePath } from "../../behaviour";
 import { storeImportPaths } from "../../storage";
@@ -69,17 +70,15 @@ export function PathResolution({ importPaths, onImportsChange }: PathResolutionP
                 <>
                   {path.value ? (
                       <Tooltip placement="top" title="Remove">
-                        <Icon
-                            type="close"
+                        <CloseOutlined
                             style={{fontSize: 16, cursor: "pointer", marginTop: 5}}
                             onClick={() => removePath(path.value, importPaths, onImportsChange)}
                         />
                       </Tooltip>
                   ) : (
                       <Tooltip placement="top" title="Add">
-                        <Icon
+                        <PlusOutlined
                             style={{color: '#28d440', fontSize: 18, cursor: "pointer", marginTop: 5}}
-                            type="plus"
                             onClick={() => {
                               const pathAdded = addImportPath(pathValue, importPaths, onImportsChange);
                               if (pathAdded) {

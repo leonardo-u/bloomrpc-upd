@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { EditorAction, EditorState } from './Editor';
 import { PlayButton } from './PlayButton';
-import { Icon, Tooltip } from 'antd';
+import { Tooltip } from 'antd';
+import { CheckOutlined, DoubleRightOutlined } from '@ant-design/icons';
 import { setRequestStreamData, setStreamCommitted } from './actions';
 import { ProtoInfo } from '../../behaviour';
 
@@ -35,7 +36,7 @@ export function Controls({ dispatch, state, protoInfo, active }: ControlsStatePr
                   state.call.write(state.data);
                 }
               }}>
-                <Icon type="double-right"/>
+                <DoubleRightOutlined />
               </div>
             </Tooltip>
 
@@ -48,7 +49,7 @@ export function Controls({ dispatch, state, protoInfo, active }: ControlsStatePr
                     dispatch(setStreamCommitted(true));
                   }
                 }}>
-                <Icon type="check"/>
+                <CheckOutlined />
               </div>
             </Tooltip>
           </div>

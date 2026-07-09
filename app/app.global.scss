@@ -1,4 +1,11 @@
-@import '~antd/dist/antd.css';
+// antd 5 uses CSS-in-JS — no global stylesheet import required.
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
 
 .root {
   background: #f0f2f5;

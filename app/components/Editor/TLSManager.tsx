@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { Button, Icon, Input, Radio, Table } from "antd";
+import { Button, Input, Radio, Table } from "antd";
+import { CloseOutlined, PlusCircleOutlined } from "@ant-design/icons";
 import { Certificate, importCertChain, importPrivateKey, importRootCert } from "../../behaviour";
 import { getTLSList, storeTLSList } from "../../storage";
 
@@ -38,7 +39,7 @@ export function TLSManager({ selected, onSelected }: TLSManagerProps) {
                     width: "100%"
                 }}
             >
-              <Icon type="plus-circle" /> Add Root Certificate
+              <PlusCircleOutlined /> Add Root Certificate
             </Button>
         </div>
         <Table
@@ -157,8 +158,7 @@ export function TLSManager({ selected, onSelected }: TLSManagerProps) {
                   return <div />
                 }
                 return (
-                    <Icon
-                        type="close"
+                    <CloseOutlined
                         onClick={() => {
                           if (selected && selected.rootCert.filePath === certificate.rootCert.filePath) {
                             onSelected && onSelected();
@@ -200,13 +200,17 @@ async function handleImportPrivateKey(
     setCerts: React.Dispatch<Certificate[]>
 ): Promise<Certificate | void> {
   try {
-    certificate.privateKey = await importPrivateKey();
+    const updated: Certificate = {
+      ...certificate,
+      privateKey: await importPrivateKey(),
+    };
 
     const certIndex = certs.findIndex((cert) => cert.rootCert.filePath === certificate.rootCert.filePath);
-    certs[certIndex] = certificate;
+    const newCerts = [...certs];
+    newCerts[certIndex] = updated;
 
-    setCerts(certs);
-    return certificate;
+    setCerts(newCerts);
+    return updated;
   } catch (e) {
     // No file Selected
   }
@@ -218,13 +222,17 @@ async function handleImportCertChain(
     setCerts: React.Dispatch<Certificate[]>
 ): Promise<Certificate | void> {
   try {
-    certificate.certChain = await importCertChain();
+    const updated: Certificate = {
+      ...certificate,
+      certChain: await importCertChain(),
+    };
 
     const certIndex = certs.findIndex((cert) => cert.rootCert.filePath === certificate.rootCert.filePath);
-    certs[certIndex] = certificate;
+    const newCerts = [...certs];
+    newCerts[certIndex] = updated;
 
-    setCerts(certs);
-    return certificate;
+    setCerts(newCerts);
+    return updated;
   } catch (e) {
     // No file Selected
   }
@@ -250,10 +258,11 @@ function setSslTargetHost(
     setCerts: React.Dispatch<Certificate[]>
 ): Certificate {
   const certIndex = certs.findIndex((cert) => cert.rootCert.filePath === certificate.rootCert.filePath);
-  certificate.sslTargetHost = value;
-  certs[certIndex] = certificate;
+  const updated: Certificate = { ...certificate, sslTargetHost: value };
+  const newCerts = [...certs];
+  newCerts[certIndex] = updated;
 
-  setCerts(certs);
+  setCerts(newCerts);
 
-  return certificate;
+  return updated;
 }

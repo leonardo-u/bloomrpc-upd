@@ -85,7 +85,7 @@ export function Viewer({ output, responseTime, emptyContent }: ResponseProps) {
             }
           }]}
           setOptions={{
-            useWorker: true,
+            useWorker: false,
             showLineNumbers: false,
             highlightGutterLine: false,
             fixedWidthGutter: true,

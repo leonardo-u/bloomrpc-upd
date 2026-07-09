@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { Layout, notification } from 'antd';
-import arrayMove from 'array-move';
+import { Button, Layout, Tooltip, notification } from 'antd';
+import { MenuUnfoldOutlined } from '@ant-design/icons';
+import { Resizable } from 're-resizable';
 import { Sidebar } from './Sidebar';
-import { TabData, TabList } from './TabList';
+import { TabData, TabList, arrayMove } from './TabList';
 import {loadProtos, ProtoFile, ProtoService} from '../behaviour';
 import {
   EditorTabsStorage,
@@ -25,6 +26,22 @@ export interface EditorTabs {
   tabs: TabData[]
 }
 
+const SIDER_WIDTH_KEY = 'bloomrpc.siderWidth';
+const SIDER_COLLAPSED_KEY = 'bloomrpc.siderCollapsed';
+const SIDER_MIN_WIDTH = 200;
+const SIDER_MAX_WIDTH = 800;
+const SIDER_DEFAULT_WIDTH = 300;
+
+function readSiderWidth(): number {
+  try {
+    const raw = window.localStorage.getItem(SIDER_WIDTH_KEY);
+    if (!raw) return SIDER_DEFAULT_WIDTH;
+    const n = parseInt(raw, 10);
+    if (Number.isFinite(n) && n >= SIDER_MIN_WIDTH && n <= SIDER_MAX_WIDTH) return n;
+  } catch {}
+  return SIDER_DEFAULT_WIDTH;
+}
+
 export function BloomRPC() {
 
   const [protos, setProtosState] = useState<ProtoFile[]>([]);
@@ -34,6 +51,18 @@ export function BloomRPC() {
   });
 
   const [environments, setEnvironments] = useState<EditorEnvironment[]>(getEnvironments());
+  const [siderWidth, setSiderWidth] = useState<number>(readSiderWidth);
+  const [siderCollapsed, setSiderCollapsed] = useState<boolean>(() => {
+    try { return window.localStorage.getItem(SIDER_COLLAPSED_KEY) === '1'; } catch { return false; }
+  });
+
+  const toggleSiderCollapsed = () => {
+    setSiderCollapsed(prev => {
+      const next = !prev;
+      try { window.localStorage.setItem(SIDER_COLLAPSED_KEY, next ? '1' : '0'); } catch {}
+      return next;
+    });
+  };
 
   function setTabs(props: EditorTabs) {
     setEditorTabs(props);
@@ -52,30 +81,58 @@ export function BloomRPC() {
 
   return (
     <Layout style={styles.layout}>
-      <Layout>
-        <Layout.Sider style={styles.sider} width={ 300 }>
-          <Sidebar
-            protos={protos}
-            onProtoUpload={handleProtoUpload(setProtos, protos)}
-            onReload={() => {
-              hydrateEditor(setProtos, setEditorTabs);
+      <Layout hasSider style={{ flexDirection: 'row', height: '100vh', overflow: 'hidden' }}>
+        {!siderCollapsed && (
+          <Resizable
+            size={{ width: siderWidth, height: '100%' }}
+            minWidth={SIDER_MIN_WIDTH}
+            maxWidth={SIDER_MAX_WIDTH}
+            enable={{ right: true }}
+            onResizeStop={(_e, _dir, _ref, d) => {
+              const next = Math.min(SIDER_MAX_WIDTH, Math.max(SIDER_MIN_WIDTH, siderWidth + d.width));
+              setSiderWidth(next);
+              try { window.localStorage.setItem(SIDER_WIDTH_KEY, String(next)); } catch {}
             }}
-            onMethodSelected={handleMethodSelected(editorTabs, setTabs)}
-            onDeleteAll={() => {
-              setProtos([]);
-            }}
-            onMethodDoubleClick={handleMethodDoubleClick(editorTabs, setTabs)}
-          />
-        </Layout.Sider>
+            handleStyles={{ right: styles.resizeHandle }}
+            style={{ ...styles.sider, overflow: 'hidden' }}
+          >
+            <Sidebar
+              protos={protos}
+              onProtoUpload={handleProtoUpload(setProtos, protos)}
+              onReload={() => {
+                hydrateEditor(setProtos, setTabs);
+              }}
+              onMethodSelected={handleMethodSelected(editorTabs, setTabs)}
+              onDeleteAll={() => {
+                setProtos([]);
+              }}
+              onMethodDoubleClick={handleMethodDoubleClick(editorTabs, setTabs)}
+              onCollapse={toggleSiderCollapsed}
+            />
+          </Resizable>
+        )}
 
-        <Layout.Content>
+        {siderCollapsed && (
+          <div style={styles.collapsedRail}>
+            <Tooltip title="Expand sidebar" placement="right">
+              <Button
+                type="primary"
+                icon={<MenuUnfoldOutlined />}
+                onClick={toggleSiderCollapsed}
+                size="small"
+              />
+            </Tooltip>
+          </div>
+        )}
+
+        <Layout.Content style={{ overflow: 'hidden', minWidth: 0, minHeight: 0, height: '100vh' }}>
           <TabList
             tabs={editorTabs.tabs || []}
             onDragEnd={({oldIndex, newIndex}) => {
               const newTab = editorTabs.tabs[oldIndex];
 
               setTabs({
-                activeKey: newTab && newTab.tabKey || editorTabs.activeKey,
+                activeKey: (newTab && newTab.tabKey) || editorTabs.activeKey,
                 tabs: arrayMove(
                     editorTabs.tabs,
                     oldIndex,
@@ -118,6 +175,10 @@ export function BloomRPC() {
               });
 
             }}
+            onDeleteAll={() => {
+              editorTabs.tabs.forEach(tab => deleteRequestInfo(tab.tabKey));
+              setTabs({ activeKey: "0", tabs: [] });
+            }}
             onChange={(activeKey: string) => {
               setTabs({
                 activeKey,
@@ -152,7 +213,7 @@ async function hydrateEditor(setProtos: React.Dispatch<ProtoFile[]>, setEditorTa
     if (savedEditorTabs) {
       hydration.push(
         loadTabs(savedEditorTabs)
-          .catch(() => setEditorTabs({activeKey: "0", tabs: []}))
+          .catch((): EditorTabs => ({activeKey: "0", tabs: []}))
           .then(setEditorTabs)
           .then(() => true)
       );
@@ -220,8 +281,7 @@ function handleProtoUpload(setProtos: React.Dispatch<ProtoFile[]>, protos: Proto
           wordBreak: "break-all",
         }
       });
-      setProtos([]);
-      return;
+      return protos;
     }
 
     const protoMinusExisting = protos.filter((proto) => {
@@ -288,7 +348,8 @@ function handleMethodDoubleClick(editorTabs: EditorTabs, setTabs: React.Dispatch
 
 const styles = {
   layout: {
-    height: "100vh"
+    height: "100vh",
+    overflow: "hidden",
   },
   header: {
     color: "#fff",
@@ -303,4 +364,22 @@ const styles = {
     backgroundColor: "white",
     boxShadow: "3px 0px 4px 0px rgba(0,0,0,0.10)",
   },
+  resizeHandle: {
+    width: 6,
+    right: -3,
+    cursor: "col-resize",
+    background: "transparent",
+  } as React.CSSProperties,
+  collapsedRail: {
+    width: 36,
+    flex: "0 0 36px",
+    height: "100vh",
+    borderRight: "1px solid rgba(0, 21, 41, 0.18)",
+    background: "#fafafa",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    paddingTop: 8,
+    boxShadow: "2px 0px 4px 0px rgba(0,0,0,0.06)",
+  } as React.CSSProperties,
 };

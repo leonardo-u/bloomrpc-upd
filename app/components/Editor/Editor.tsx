@@ -18,11 +18,12 @@ import { ProtoFileViewer } from './ProtoFileViewer';
 import { Certificate, ProtoInfo, GRPCEventEmitter } from '../../behaviour';
 import { getMetadata, getUrl, storeUrl } from '../../storage';
 
-import 'brace/theme/textmate';
-import 'brace/mode/json';
-import 'brace/mode/protobuf';
+import 'ace-builds/src-noconflict/theme-textmate';
+import 'ace-builds/src-noconflict/mode-json';
+import 'ace-builds/src-noconflict/mode-protobuf';
+import 'ace-builds/src-noconflict/ext-language_tools';
 import { exportResponseToJSONFile } from "../../behaviour/response";
-import Resizable from "re-resizable";
+import { Resizable } from "re-resizable";
 import { AddressBar } from "./AddressBar";
 import { deleteEnvironment, getEnvironments, saveEnvironment } from "../../storage/environments";
 

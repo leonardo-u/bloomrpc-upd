@@ -1,5 +1,6 @@
-// @ts-ignore
-import * as lodashGet from 'lodash.get';
+// `lodash.get` exports a single function via CommonJS `module.exports = ...`.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const lodashGet: (obj: any, path: string | string[]) => any = require('lodash.get');
 import { ProtoService } from './protobuf';
 
 

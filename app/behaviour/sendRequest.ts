@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
-import { credentials, Metadata, ServiceError } from "grpc";
+import { credentials, Metadata, ServiceError } from "@grpc/grpc-js";
 import { ProtoInfo } from './protoInfo';
-import * as grpc from 'grpc';
+import * as grpc from '@grpc/grpc-js';
 import * as fs from "fs";
 import { Certificate } from "./importCertificates";
 import * as grpcWeb from 'grpc-web'
@@ -56,6 +56,12 @@ export class GRPCRequest extends EventEmitter {
 
   send(): GRPCRequest {
     const serviceClient: any = this.protoInfo.client();
+    if (typeof serviceClient !== 'function') {
+      const err = new Error(`Service constructor for "${this.protoInfo.service.serviceName}" not found in proto. The proto file may have failed to load.`);
+      this.emit(GRPCEventType.ERROR, err, {});
+      this.emit(GRPCEventType.END);
+      return this;
+    }
     const client: grpc.Client = this.getClient(serviceClient);
     let inputs = {};
     let metadata: {[key: string]: any} = {};
@@ -316,7 +322,7 @@ export class GRPCRequest extends EventEmitter {
       e.message = "Couldn't parse JSON inputs Invalid json";
       this.emit(GRPCEventType.ERROR, e, {});
       this.emit(GRPCEventType.END);
-      throw new Error(e);
+      throw e;
     }
 
     if (userMetadata) {
@@ -326,7 +332,7 @@ export class GRPCRequest extends EventEmitter {
         e.message = "Couldn't parse JSON metadata Invalid json";
         this.emit(GRPCEventType.ERROR, e, {});
         this.emit(GRPCEventType.END);
-        throw new Error(e);
+        throw e;
       }
     }
 
@@ -535,7 +541,7 @@ export class GRPCWebRequest extends EventEmitter {
       e.message = "Couldn't parse JSON inputs Invalid json";
       this.emit(GRPCEventType.ERROR, e, {});
       this.emit(GRPCEventType.END);
-      throw new Error(e);
+      throw e;
     }
 
     if (userMetadata) {
@@ -545,7 +551,7 @@ export class GRPCWebRequest extends EventEmitter {
         e.message = "Couldn't parse JSON metadata Invalid json";
         this.emit(GRPCEventType.ERROR, e, {});
         this.emit(GRPCEventType.END);
-        throw new Error(e);
+        throw e;
       }
     }
 

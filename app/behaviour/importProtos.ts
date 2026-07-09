@@ -1,12 +1,35 @@
-import {remote} from 'electron';
-import {fromFileName, mockRequestMethods, Proto, walkServices} from 'bloomrpc-mock';
+import * as remote from '@electron/remote';
+import {fromFileName, mockRequestMethods, Proto, walkServices} from './protoLoader';
 import * as path from 'path';
 import {ProtoFile, ProtoService} from './protobuf';
 import {Service} from 'protobufjs';
 import {Client} from 'grpc-reflection-js';
-import {credentials} from '@grpc/grpc-js';
-import * as grpc from 'grpc';
-import isURL from 'validator/lib/isURL';
+import * as fs from 'fs';
+import {credentials, loadPackageDefinition} from '@grpc/grpc-js';
+
+/**
+ * Decide whether a stored proto reference is a local file path or a gRPC
+ * server reflection target. We deliberately do NOT use validator's isURL —
+ * with the permissive options it used to be called with, every Linux/Mac
+ * absolute path was misclassified as a URL and routed through the
+ * reflection client, which then failed with "Name resolution failed for
+ * target dns:/home/...". This regressed every subsequent gRPC call.
+ */
+function looksLikeFilePath(p: string): boolean {
+  if (!p) return false;
+  // Absolute POSIX or Windows path
+  if (p.startsWith('/') || /^[A-Za-z]:[\\/]/.test(p)) return true;
+  // Relative path
+  if (p.startsWith('./') || p.startsWith('../') || p.startsWith('~')) return true;
+  // Has the .proto extension and contains a separator → almost certainly a file
+  if (/[\\/]/.test(p) && /\.proto$/i.test(p)) return true;
+  // Final safety net: it actually exists on disk
+  try {
+    return fs.existsSync(p);
+  } catch {
+    return false;
+  }
+}
 
 const commonProtosPath = [
   // @ts-ignore
@@ -30,7 +53,7 @@ export async function importProtos(onProtoUploaded: OnProtoUpload, importPaths?:
 
   const filePaths = openDialogResult.filePaths;
 
-  if (!filePaths) {
+  if (!filePaths || filePaths.length === 0) {
     return;
   }
   await loadProtosFromFile(filePaths, importPaths, onProtoUploaded);
@@ -52,19 +75,8 @@ export async function importProtosFromServerReflection(onProtoUploaded: OnProtoU
  * @param onProtoUploaded
  */
 export async function loadProtos(protoPaths: string[], importPaths?: string[], onProtoUploaded?: OnProtoUpload): Promise<ProtoFile[]> {
-  let validateOptions = {
-    require_tld: false,
-    require_protocol: false,
-    require_host: false,
-    require_valid_protocol: false,
-  }
-  const protoUrls = protoPaths.filter((protoPath) => {
-    return isURL(protoPath, validateOptions);
-  })
-
-  const protoFiles = protoPaths.filter((protoPath) => {
-    return !isURL(protoPath, validateOptions);
-  })
+  const protoFiles = protoPaths.filter(looksLikeFilePath);
+  const protoUrls = protoPaths.filter((p) => !looksLikeFilePath(p));
 
   const protoFileFromFiles = await loadProtosFromFile(protoFiles, importPaths, onProtoUploaded);
 
@@ -91,12 +103,12 @@ export async function loadProtoFromReflection(host: string, onProtoUploaded?: On
             .map((service: string) => reflectionClient.fileContainingSymbol(service))
     );
 
-    const protos = serviceRoots.map((root) => {
+    const protos = serviceRoots.map((root: any) => {
       return {
         fileName: root.files[root.files.length - 1],
         filePath: host,
         protoText: "proto text not supported in gRPC reflection",
-        ast: grpc.loadObject(root),
+        ast: protobufRootToGrpcAst(root),
         root: root
       }
     });
@@ -195,6 +207,26 @@ function parseServices(proto: Proto) {
   return services;
 }
 
+/**
+ * Convert a protobufjs Root (returned by grpc-reflection-js) into the
+ * grpc client object tree that the rest of the code expects (a GrpcObject
+ * with service constructors). We do this by serialising to JSON and
+ * re-parsing via @grpc/proto-loader.fromJSON, then loadPackageDefinition.
+ */
+function protobufRootToGrpcAst(root: any): any {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { fromJSON } = require('@grpc/proto-loader');
+  const json = root.toJSON();
+  const packageDefinition = fromJSON(json, {
+    keepCase: true,
+    longs: String,
+    enums: String,
+    defaults: true,
+    oneofs: true,
+  });
+  return loadPackageDefinition(packageDefinition);
+}
+
 export function importResolvePath(): Promise<string> {
   return new Promise(async (resolve, reject) => {
     const openDialogResult = await remote.dialog.showOpenDialog(remote.getCurrentWindow(), {
@@ -204,7 +236,7 @@ export function importResolvePath(): Promise<string> {
 
     const filePaths = openDialogResult.filePaths;
 
-    if (!filePaths) {
+    if (!filePaths || filePaths.length === 0) {
       return reject("No folder selected");
     }
     resolve(filePaths[0]);

@@ -5,10 +5,14 @@
  *
  * When running `yarn build` or `yarn build-main`, this file is compiled to
  * `./app/main.prod.js` using webpack. This gives us some performance wins.
- *
  */
 const { app, BrowserWindow } = require('electron');
+const remoteMain = require('@electron/remote/main');
+const Store = require('electron-store');
 const MenuBuilder = require('./menu');
+
+remoteMain.initialize();
+Store.initRenderer();
 
 let mainWindow = null;
 
@@ -17,12 +21,11 @@ if (process.env.NODE_ENV === 'production') {
   sourceMapSupport.install();
 }
 
-require('electron-debug')();
-
 if (
   process.env.NODE_ENV === 'development' ||
   process.env.DEBUG_PROD === 'true'
 ) {
+  require('electron-debug')();
   const path = require('path');
   const p = path.join(__dirname, '..', 'app', 'node_modules');
   require('module').globalPaths.push(p);
@@ -31,16 +34,12 @@ if (
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');
   const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
-  const extensions = ['REACT_DEVELOPER_TOOLS', 'REDUX_DEVTOOLS'];
+  const extensions = ['REACT_DEVELOPER_TOOLS'];
 
   return Promise.all(
     extensions.map(name => installer.default(installer[name], forceDownload))
   ).catch(console.log);
 };
-
-/**
- * Add event listeners...
- */
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
@@ -50,7 +49,7 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('ready', async () => {
+app.whenReady().then(async () => {
   if (
     process.env.NODE_ENV === 'development' ||
     process.env.DEBUG_PROD === 'true'
@@ -62,21 +61,24 @@ app.on('ready', async () => {
     show: false,
     width: 1324,
     height: 728,
-    backgroundColor: "#f0f2f5",
+    backgroundColor: '#f0f2f5',
     webPreferences: {
-      nodeIntegration: true
-    }
+      nodeIntegration: true,
+      contextIsolation: false,
+      // Allow loading local files (e.g. proto static includes) in dev
+      webSecurity: process.env.NODE_ENV === 'production',
+    },
   });
+
+  remoteMain.enable(mainWindow.webContents);
 
   mainWindow.loadURL(`file://${__dirname}/app.html`);
 
-  // https://github.com/electron/electron/blob/master/docs/api/browser-window.md#using-ready-to-show-event
   mainWindow.once('ready-to-show', () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
-
-    setTimeout(function() {
+    setTimeout(() => {
       mainWindow.show();
       mainWindow.focus();
     }, 150);

@@ -1,4 +1,5 @@
-const { BrowserWindow, remote, shell } = require('electron');
+const { BrowserWindow, shell } = require('electron');
+const remoteMain = require('@electron/remote/main');
 const path = require('path');
 const icon = process.env.HOT
     ? path.join(__dirname, '../../resources/icon.ico')
@@ -20,11 +21,13 @@ module.exports = function openAboutWindow(parentWindow) {
         icon: icon,
         parent: parentWindow,
         webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            contextIsolation: false,
         }
     }
 
-    aboutWin = new (BrowserWindow || remote.BrowserWindow)(options);
+    aboutWin = new BrowserWindow(options);
+    remoteMain.enable(aboutWin.webContents);
 
     aboutWin.once('closed', () => {
         aboutWin = null;

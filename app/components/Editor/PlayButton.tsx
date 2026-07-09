@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { Icon, notification } from 'antd';
+import { notification } from 'antd';
+import { PauseCircleFilled, PlayCircleFilled } from '@ant-design/icons';
 import * as Mousetrap from 'mousetrap'
 import 'mousetrap/plugins/global-bind/mousetrap-global-bind';
 import {
@@ -130,10 +131,10 @@ export function PlayButton({ dispatch, state, protoInfo, active }: ControlsState
     state.tlsCertificate,
   ])
 
+  const IconCmp = state.loading ? PauseCircleFilled : PlayCircleFilled;
   return (
-    <Icon
-      type={state.loading ? "pause-circle" : "play-circle"}
-      theme="filled" style={{ ...styles.playIcon, ...(state.loading ? { color: "#ea5d5d" } : {}) }}
+    <IconCmp
+      style={{ ...styles.playIcon, ...(state.loading ? { color: "#ea5d5d" } : {}) }}
       onClick={() => makeRequest({ dispatch, state, protoInfo })}
     />
   )

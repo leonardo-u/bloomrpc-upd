@@ -1,5 +1,13 @@
 import * as React from 'react';
-import { Icon, Input, Modal, Select } from "antd";
+import { Input, Modal, Select } from "antd";
+import {
+  DatabaseOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  LoadingOutlined,
+  PlusCircleOutlined,
+  ProjectOutlined,
+} from "@ant-design/icons";
 import { RequestType } from "./RequestType";
 import { ChangeEvent, useEffect, useState } from "react";
 import { ProtoInfo } from "../../behaviour";
@@ -64,7 +72,7 @@ export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnviron
                     title: 'Environment Name',
                     className: "env-modal",
                     icon: (
-                        <Icon type="project" />
+                        <ProjectOutlined />
                     ),
                     onOk: () => {
                       setConfirmedSave(true);
@@ -86,7 +94,7 @@ export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnviron
                     title: `Update ${currentEnvironmentName}?`,
                     className: "env-modal",
                     icon: (
-                        <Icon type="project" />
+                        <ProjectOutlined />
                     ),
                     onOk: () => {
                       setConfirmedSave(true);
@@ -103,7 +111,7 @@ export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnviron
                     title: `Deleting ${currentEnvironmentName}?`,
                     className: "env-modal",
                     icon: (
-                        <Icon type="delete" />
+                        <DeleteOutlined />
                     ),
                     onOk: () => {
                       setConfirmedDelete(true);
@@ -131,16 +139,16 @@ export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnviron
 
             {currentEnvironmentName &&
               <Select.Option value="update">
-                  <Icon type="edit" /> Update Environment
+                  <EditOutlined /> Update Environment
               </Select.Option>
             }
             {currentEnvironmentName &&
             <Select.Option value="delete">
-                <Icon type="delete" /> Delete Environment
+                <DeleteOutlined /> Delete Environment
             </Select.Option>
             }
             <Select.Option value="new">
-              <Icon type="plus-circle" /> Save New Environment
+              <PlusCircleOutlined /> Save New Environment
             </Select.Option>
           </Select>
           <Input
@@ -148,7 +156,7 @@ export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnviron
               className="server-url"
               addonAfter={(
                   <div style={{display: "flex", alignItems: "center", width: "125px"}}>
-                    {loading ? <Icon type="loading"/> : <Icon type="database"/>}
+                    {loading ? <LoadingOutlined /> : <DatabaseOutlined />}
                     <RequestType protoInfo={protoInfo} />
                   </div>
               )}

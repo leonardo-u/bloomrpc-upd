@@ -19,7 +19,7 @@ export function ProtoFileViewer({ protoInfo, visible, onClose }: ProtoFileViewer
       width={"50%"}
       closable={false}
       onClose={onClose}
-      visible={visible}
+      open={visible}
     >
       <AceEditor
         style={{ marginTop: "10px", background: "#fff" }}
@@ -41,7 +41,7 @@ export function ProtoFileViewer({ protoInfo, visible, onClose }: ProtoFileViewer
           editor.gotoLine(0, 0, true);
         }}
         setOptions={{
-          useWorker: true,
+          useWorker: false,
           displayIndentGuides: false,
           showLineNumbers: false,
           highlightGutterLine: false,

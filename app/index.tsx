@@ -1,24 +1,11 @@
 import * as React from 'react';
-import { render } from 'react-dom';
-import { AppContainer } from 'react-hot-loader';
+import { createRoot } from 'react-dom/client';
 import './app.global.scss';
 import App from './App';
 
-render(
-  <AppContainer>
-    <App/>
-  </AppContainer>,
-  document.getElementById('root')
-);
-
-if ((module as any).hot) {
-  (module as any).hot.accept('./App', () => {
-    const NextApp = require('./App').default;
-    render(
-      <AppContainer>
-        <NextApp />
-      </AppContainer>,
-      document.getElementById('root')
-    );
-  });
+const container = document.getElementById('root');
+if (!container) {
+  throw new Error('Root container element #root not found');
 }
+const root = createRoot(container);
+root.render(<App />);

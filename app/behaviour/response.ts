@@ -1,4 +1,4 @@
-import { remote } from "electron";
+import * as remote from "@electron/remote";
 import * as path from 'path';
 import * as fs from 'fs';
 import { ProtoInfo } from "./protoInfo";
@@ -14,7 +14,7 @@ export function exportResponseToJSONFile(protoInfo: ProtoInfo, editorState: Edit
 
     const filePaths = openDialogResult.filePaths;
 
-    if (!filePaths) {
+    if (!filePaths || filePaths.length === 0) {
       return reject("No folder selected");
     }
 

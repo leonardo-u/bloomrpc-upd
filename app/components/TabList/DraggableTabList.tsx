@@ -1,23 +1,33 @@
 import * as React from 'react';
-import { SortableContainer, SortableElement } from 'react-sortable-hoc';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
-interface DraggableItemProps {
-  children: JSX.Element,
-  active?: boolean,
+interface SortableTabNodeProps {
+  id: string;
+  active: boolean;
+  children: React.ReactNode;
 }
 
-export const DraggableItem = SortableElement(({children, active}: DraggableItemProps) => (
-    <div className={`inline-item ${active ? "active" : ""}`}>{children}</div>
-));
+export const SortableTabNode: React.FC<SortableTabNodeProps> = ({ id, active, children }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
-interface DraggableTabProps {
-  children: JSX.Element[] | JSX.Element
-}
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    cursor: 'move',
+    opacity: isDragging ? 0.6 : 1,
+    display: 'inline-block',
+  };
 
-export const DraggableTabs = SortableContainer(({ children }: DraggableTabProps) => {
   return (
-      <div>
-        {children}
-      </div>
-  )
-});
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`inline-item ${active ? 'active' : ''}`}
+    >
+      {children}
+    </div>
+  );
+};

@@ -1,4 +1,5 @@
-const { ipcRenderer, remote, shell } = require('electron');
+const { ipcRenderer, shell } = require('electron');
+const remote = require('@electron/remote');
 
 ipcRenderer.on('about-window:info', function (_, info) {
     const app_name = info.product_name || remote.app.getName();
